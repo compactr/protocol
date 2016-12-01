@@ -117,7 +117,8 @@ Note that for decimals, only Double is a valid stategy, and most closely matches
 
 The bytes of a compactr payload are split into these categories
 
-|---|---|
+| Key | Description |
+| --- | --- |
 | KEY_COUNT | Holds the number of keys included in the payload |
 | KEY_INDEX | Tells which Schema property is stored |
 | LENGTH | Indicates the byte size of the data |
@@ -134,9 +135,10 @@ It's also important to keep endian direction across parties.
 
 Compactr payloads are made up of two sections
 
-|---|---|
-| MAP | Includes KEY_COUNT, KEY_INDEX and LENGTH bytes. Helps to create a logical map of the data stored in the buffer |
-| CONTENT | The actual binary-encoded DATA bytes, all concatenated |
+| Section | Description |
+| --- | --- |
+|MAP | Includes KEY_COUNT, KEY_INDEX and LENGTH bytes. Helps to create a logical map of the data stored in the buffer |
+|CONTENT | The actual binary-encoded DATA bytes, all concatenated |
 
 ---
 
