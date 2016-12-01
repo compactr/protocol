@@ -1,5 +1,5 @@
 # Compactr Protocol
-**for universal JSON serialization**
+**for universal serialization**
 
 *Version* 2
 *Revision* 1
