@@ -42,7 +42,7 @@ ex:
 
 Serialization refers to the translation of data structures into an easily storable or portable format. In most cases, this equates to interpreting application Objects as a string of characters or a binary buffer. There are many ways to serialize data structures:
 
-** JSON Stringification: ** Before a JSON REST API is able to send an Object over the line to the client, it needs to be translated into something that HTTP can easily chunk into packets. Since HTTP is a text-based protocol, the Object is translated into a string of characters, or *JSON stringification*.
+__JSON Stringification:__ Before a JSON REST API is able to send an Object over the line to the client, it needs to be translated into something that HTTP can easily chunk into packets. Since HTTP is a text-based protocol, the Object is translated into a string of characters, or *JSON stringification*.
 
 Pros:
 
@@ -56,9 +56,9 @@ Cons:
 - Bytes are wasted repeating the [schema](#lexicon) and JSON markup in every transfer
 - In the case of realtime web applications, bytes are too precious to waste
 
-** Binary-ready protocols: ** Some web protocols, like websockets or HTTP2, are not text-based protocols. They allow passing binary buffers over the line. The browser gives us a naïve but effective representation of buffer objects as an array of UINT8 values.
+__Binary-ready protocols:__ Some web protocols, like websockets or HTTP2, are not text-based protocols. They allow passing binary buffers over the line. The browser gives us a naïve but effective representation of buffer objects as an array of UINT8 values.
 
-** Schema-based serialization ** aims to remove markup and unnecessary [schema](#lexicon) key names, which results in *much* smaller `Buffer` outputs. The expected key names and data types are specified in a Schema, which is shared between both parties beforehand.
+__Schema-based serialization__ aims to remove markup and unnecessary [schema](#lexicon) key names, which results in *much* smaller `Buffer` outputs. The expected key names and data types are specified in a Schema, which is shared between both parties beforehand.
 
 Pros:
 
