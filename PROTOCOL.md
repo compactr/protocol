@@ -167,7 +167,6 @@ This sections includes the mapping information of the payload.
 
 - KEY_COUNT: A single byte of type unsigned INT8 to display the number of keys in the payload
 - KEY_ID: A single byte of type unsigned INT8 to indentify a given key in your schema
-- COUNT: The number of byts required to display the length data, represented as an unsigned INT8
 - LENGTH: A variable number of bytes that displays the byte length of the data for this key
 
 **Example**
@@ -185,13 +184,12 @@ Data: `{ a: 0, b: 1, c: 2 }`
 
 - KEY_COUNT: 3 keys in the data, all matching keys in the schema -> 03
 - KEY_ID(a): The first key in the schema -> 00
-- COUNT(a): There are no counts override, use default -> 01
-- LENGTH(a): It is of type int8, according to the schema -> 01
+- LENGTH(a): No overrides were made to the count property, so this section is 1 byte (default) and the length of the data is -> 01
 ...
 
 Header:
 
-`<03, 00, 01, 01, 01, 01, 01, 02, 01, 01>` 
+`<03, 00, 01, 01, 01, 02, 01>` 
 
 ### Content
 
