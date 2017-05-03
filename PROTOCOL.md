@@ -2,7 +2,7 @@
 **for universal serialization**
 
 *Version* 2
-*Revision* 1
+*Revision* 2
 
 ## Table of Contents
 
@@ -93,248 +93,131 @@ Before we dig into the subject, we need to take a look at existing solutions fir
 
 ### Protocol Buffers
 
-One of the most used Schema-based serialization protocols right now is Google's Protocol Buffers. It is regarded by the industry as being reputable and highly performant. Here is my criticism:
+One of the most used Schema-based serialization protocols right now is Google's Protocol Buffers. It is regarded by the industry as being reputable and highly performant. Here our my criticism:
 
-- It introduces a new type of asset that your application must care for: `.proto` files.
-- `.proto` files are written in their own special markdown syntax
-- Protocol Buffers support data types that are not easily mapped to those used by web developers
-- If you wanted to inspect or instrument these Schemas, you would have to build your own tools to parse them and load them into comprehensible and workable Objects.
+- Loss of tooling and social costs associated with the introduced `.proto` files.
+- Protocol Buffers support data types and nested structures are not easily mapped to those used by web developers used to working with plain Objects (POJOs).
+- Heavily engineered for extra-resilience and edge-case support limits performance and increases payload sizes.
 
-Compactr is a serialization protocol that aims to solve this problem:
+Compactr is a serialization protocol that aims to solve these problem:
 
-- Schemas are actual Data structures inside your app.
-- Data types are simplified to better suit web development.
-- Data is structured like a JSON object.
+- Schemas are plain Object structures coded in your app's language or portable JSON.
+- Data types and nested structures are simplified to better mimic JSON.
 - It supports full recursion and lookups.
-- It supports sending maps and content separately for even shorter payloads.
+- It supports encoding payload headers and contents separately for even shorter payloads.
+- Validation and coersing options are available- not enforced.
 
 ---
 
-## Data types
+## Schema
 
-Data types have been simplified in Compactr and try to mimic core Javascript types:
+A simple schema is an object that has some schema-keys defined.
 
-- Boolean
-- Number
-- Object
-- String
+### Schema-key
 
-In arrays:
+A schema-key is an object containing the options for the encoding and decoding of a given property.
 
-- Array of Booleans
-- Array of Numbers
-- Array of Objects
-- Array of Strings
+Possible options include `type`, `count`, `size`, `schema` and `items`.
+Where `schema`applies to *object* types and `items` to *array* types.
 
-When selecting `Number` as a field data type, the encoder will automatically determine the best strategy for the value passed. It also offers the possibility to specify the strategy yourself:
+### Data types
 
-- INT8
-- INT16
-- INT32
-- DOUBLE
+The type of the data for the property. Here's the list of exposed data types.
+It is important to note that *null* or *undefined* values are ignored by compactr. 
 
-And also in arrays:
-
-- Array of INT8
-- Array of INT16
-- Array of INT32
-- Array of DOUBLES
-
-Note that for decimals, only `Double` is a valid strategy, and most closely matches Javascript's `Float64` definition.
-
----
-
-## Byte types
-
-The bytes of a Compactr payload are split into these categories:
-
-| Key | Description |
+| Name | Description |
 | --- | --- |
-| KEY_COUNT | Indicates the number of keys included in the payload |
-| KEY_INDEX | Indicates which Schema property is stored |
-| LENGTH | Indicates the byte size of the data |
-| DATA | The binary-encoded data |
+| boolean | A boolean value |
+| number | ieee754 finite number value, does not support NaN or Infinity |
+| int8 | 8Bit signed integer |
+| int16 | 16Bit signed integer |
+| int32 | 32Bit signed integer |
+| double | ieee754 finite number value, does not support NaN or Infinity |
+| string | 16bit character string |
+| char8 | 8bit character string |
+| char16 | 16bit character string |
+| char32 | 32bit character string |
+| object | recursive compactr schema processing (must be a valid compactr schema) |
+| array | (TBD) |
 
+### Count
 
-`LENGTH` value, a `UINT8` byte by default, can either be dynamic or static, depending on the data type. `INT8`, for example, will always be of length `01` (for one byte). Strings, can be of various lengths. When the length of your strings can exceed the max value of `UINT8` (255 characters), it's important to change the configuration for that field in the encoding. This change has to be done by all parties to maintain data integrity.
+The count property indicates how many bytes are required to display the content's size.
+The byte count maps to the signed integers specs in data types.
+For example, a count value of 1 supports data lengths of 0 to 127 bytes.
+The default value for the count property is 1.
 
-It's also important to keep endian direction across parties.
+### Size
 
----
-
-## Sections
-
-Compactr payloads are made up of two sections
-
-| Section | Description |
-| --- | --- |
-|MAP | Includes `KEY_COUNT`, `KEY_INDEX` and `LENGTH` bytes. Helps to create a logical map of the data stored in the buffer |
-|CONTENT | The actual binary-encoded `DATA` bytes, all concatenated |
-
----
-
-## Mapping
-
-A typical Compactr payload is built as follows (Shallow Object):
-
-`[KEY_COUNT][KEY_INDEX A][LENGTH A][KEY_INDEX B][LENGTH B][DATA A][DATA B]`
-
-Here's an example of how this translates for a Javascript Object:
-
-```
-// Data
-{
-    name: 'greg',
-    age: 32
-}
-
-// Schema
-{
-    name: 'string',
-    age: 'number'
-}
-```
-
-```
--- MAP
-  KEY_COUNT = 02
-
-  (name) KEY_INDEX = 00
-  (greg) LENGTH = 04
-
-  (age) KEY_INDEX = 01
-  (32) LENGTH = 01 // Gets cast as INT8
-
--- CONTENT
-  (greg) DATA[0] = 67,72,65,67
-  (32) DATA[1] = 32
-
-
--- Result:
-<Buffer 02, 00, 04, 01, 01, 67, 72, 65, 67, 32>
-```
-
-If we compare the size of our Compactr payload to what we would have had through JSON stringification:
-
-- Compactr: 10 Bytes
-- JSON stringification: 24 Bytes
-
-This also works with nested data, as deep as you need it! Maps are all aggregated in the first section.
-
-
-```
-// Data
-{
-  users: [
-    { name: 'greg', age: 32 },
-    { name: 'steve', age: 26 },
-    { name: 'patrick', age: 41 }
-  ]
-}
-
-// Schemas
-{
-  users: {
-    type: 'schema_array',
-    items: {
-      name: 'string',
-      age: 'number'
-    }
-  }
-}
-```
-
-```
--- MAP
-  KEY_COUNT = 01
-
-  (users) KEY_INDEX = 00
-  (users) LENGTH = 19
-
-  (users[0]) KEY_COUNT = 02
-
-  (users[0].name) KEY_INDEX = 00
-  (users[0] greg) LENGTH = 04
-
-  (users[0].age) KEY_INDEX = 01
-  (users[0] 32) LENGTH = 01
-
-  (users[1]) KEY_COUNT = 02
-
-  (users[1].name) KEY_INDEX = 00
-  (users[1] steve) LENGTH = 05
-
-  (users[1].age) KEY_INDEX = 01
-  (users[1] 26) LENGTH = 01
-
-  (users[2]) KEY_COUNT = 02
-
-  (users[2].name) KEY_INDEX = 00
-  (users[2] patrick) LENGTH = 07
-
-  (users[2].age) KEY_INDEX = 01
-  (users[2] 41) LENGTH = 01
-
--- CONTENT
-  (greg) DATA[0] = 67,72,65,67
-  (32) DATA[1] = 32
-  (steve) DATA[2] = 73,74,65,76,65
-  (26) DATA[3] = 26
-  (patrick) DATA[4] = 70,61,74,72,69,63,6b
-  (41) DATA[5] = 41
-
-
-<Buffer 01, 00, 19, 02, 00, 04, 01, 01, 02, 00, 05, 01, 01, 02, 00, 07, 01, 01, 67, 72, 65, 67, 32, 73, 74, 65, 76, 65, 26, 70, 61, 74, 72, 69, 63, 6b, 41>
-```
-
-- Compactr: 37 Bytes
-- JSON: 90 Bytes
+The size property overrides allocation size for the data. This is needed for strings, objects and other dynamic-size data types when streaming the header and content buffers separatly.
 
 ---
 
-## Streaming
+## Buffer structure
 
-Say you're building a game, and you only care about the x and y position of a character. One of Compactr's abilities is to stream only the `CONTENT` section of the payload based on one map. This works wonders if you need to send booleans or numeric coordinates repetitively.
+The resulting buffer is separated in two sections. The header and the content.
 
-This can be achieved like so:
+### Header
 
+This sections includes the mapping information of the payload.
+
+**Layout**
+
+`[KEY_COUNT] each(key) { [KEY_ID][COUNT][LENGTH] }`
+
+- KEY_COUNT: A single byte of type unsigned INT8 to display the number of keys in the payload
+- KEY_ID: A single byte of type unsigned INT8 to indentify a given key in your schema
+- COUNT: The number of byts required to display the length data, represented as an unsigned INT8
+- LENGTH: A variable number of bytes that displays the byte length of the data for this key
+
+**Example**
+
+Schema: 
 ```
-const User = {
-  x: 'int16',
-  y: 'int16'
+{
+  a: { type: 'int8' },
+  b: { type: 'int8' },
+  c: { type: 'int8' }
 }
-
-// Encode your data as usual
-const UserMap = Compactr.map(User);
-
-// Encode some data
-let payload = UserMap.encode({ x: 12, y: -200 });
-
-// Only prints out the content
-// <Buffer 12, 00, 38, 00>
 ```
 
-- Compactr: 4 Bytes
-- JSON: 17 Bytes
+Data: `{ a: 0, b: 1, c: 2 }`
 
-This doesn't work as well for dynamic-length data:
+- KEY_COUNT: 3 keys in the data, all matching keys in the schema -> 03
+- KEY_ID(a): The first key in the schema -> 00
+- COUNT(a): There are no counts override, use default -> 01
+- LENGTH(a): It is of type int8, according to the schema -> 01
+...
 
+Header:
+
+`<03, 00, 01, 01, 01, 01, 01, 02, 01, 01>` 
+
+### Content
+
+The content section is simply the list of encoded data byte segments chained one after the other.
+
+**Layout**
+
+`each(data) { [DATA] }`
+
+- DATA: The encoded data bytes for a given property
+
+Schema: 
 ```
-// Make sure to include a config object to allocate space for dynamic length fields (strings, arrays, objects)
-const UserMap = Compactr.map(User, {
-  name: {
-    size: 8	// Data will be truncated to 8 bytes
-  }
-});
-
-// Encode some data
-let payload = UserMap.encode({ name: 'greg', age: 32});
-
-// Only prints out the content
-// <Buffer 67, 72, 65, 67, 00, 00, 00, 00, 32>
+{
+  a: { type: 'int8' },
+  b: { type: 'int8' },
+  c: { type: 'int8' }
+}
 ```
 
-- Compactr: 9 Bytes
-- JSON: 24 Bytes
+Data: `{ a: 0, b: 1, c: 2 }`
 
-You may shave off a couple bytes, but you risk either truncating or over-allocating.
+- DATA(a): Encoded byte(s) -> 01
+...
+
+Content:
+
+`<00, 01, 02>` 
+
