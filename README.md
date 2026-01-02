@@ -15,7 +15,7 @@ Keywords:
 
 ## Abstract
 
-This document specifies the compactr format, a schema-based serialization protocol which aims to reuse existing [OpenAPI](https://spec.openapis.org/oas/v3.1.2.html) specifications as shemas.
+This document specifies the compactr format, a schema-based serialization protocol which aims to reuse existing [[OAS]](https://spec.openapis.org/oas/v3.1.2.html)OpenAPI specifications as schemas.
 
 ## Status
 
@@ -23,29 +23,39 @@ The specification is Stable as of this publication's release.
 
 ## Table of Contents
 
-[1. Background](#1-Background)
+- [1. Background](#1-Background)
 
-[2. Design decisions](#2-Design-decisions)
+- [2. Design decisions](#2-Design-decisions)
 
-[3. Schemas](#3-Schemas)
+  - [2.1 Byte-order](#2-1-Byte-order)
 
-[4. Primitive types](#4-Primitive-types)
+  - [2.2 Key limits](#2-2-Key-limits)
 
-[5. Complex schemas](#5-Complex-schemas)
+  - [2.3 Size limits](#2-3-Size-limits)
 
-[6. Variants](#6-Variants)
+  - [2.4 Schema properties and Encoding order](#2-4-Schema-properties-and-Encoding-order)
 
-[7. Implementation considerations](#7-Implementation-considerations)
+  - [2.5 Versionning](#2-5-Versionning)
 
-[8. Security considerations](#8-Security-considerations)
+- [3. Schemas](#3-Schemas)
 
-[9. References](#9-References)
+- [4. Primitive types](#4-Primitive-types)
+
+- [5. Complex schemas](#5-Complex-schemas)
+
+- [6. Variants](#6-Variants)
+
+- [7. Implementation considerations](#7-Implementation-considerations)
+
+- [8. Security considerations](#8-Security-considerations)
+
+- [9. References](#9-References)
 
 ---
 
 ## 1. Background
 
-Serialization in the context of Web APIs refers to the process of converting data structures into a format that can be easily transmitted over a network, typically in formats such as TEXT (ex: JSON, XML), or BINARY (ex: Files, [Protobuf](https://protobuf.dev/), so that they can be understood and reconstructed by other systems.
+Serialization in the context of Web APIs refers to the process of converting data structures into a format that can be easily transmitted over a network, typically in formats such as TEXT (ex: JSON, XML), or BINARY (ex: Files, [Protobuf](https://protobuf.dev/)), so that they can be understood and reconstructed by other systems.
 
 A schema-based serialization approach enforces a predefined structure for data, ensuring consistency and validation, while a schema-less approach allows for more flexible and dynamic data representation, with fewer constraints on how data is organized.
 
@@ -55,8 +65,66 @@ The initial concept for the compactr protocol was drafted in [2016](https://www.
 
 While functional, the early versions would still require the knowledge of writing "compactr-style" schemas as Javascript Objects or JSON and limited adoption for languages outside of Javascript. As of compactr.js 3.0, release in 2025, the protocol moved to adopt OpenAPI 3.x as the base format for compactr schemas.
 
+---
 
 ## 2. Design decisions
+
+The primary objectives of the Compactr protocols are:
+
+- First-party schema definitions, using [[OAS]](https://spec.openapis.org/oas/v3.1.2.html)OpenAPI specifications as base schemas.
+- Optimized binary output
+- Compatibility across runtimes
+- Type safety
+
+In order to meet these objectives, some key design decisions were made:
+
+### 2.1 Byte-order
+
+Compactr binary follows Network byte order (NBO) big-endian format.
+
+### 2.2 Key limits
+
+Indices for properties are assigned a numeric value which is stored as an unsigned 8bit integer. Thus limiting the number of properties per object to 255.
+
+### 2.3 Size limits
+
+Some primitive types (ex: `Boolean`) have static sizes, which are not encoded, while others (ex: `String`) have dynamic sizes.
+
+Dynamically-sized properties have varying size limits, which are described in the [primitives](#4-primitives) section of this document.
+
+
+### 2.4 Schema properties and Encoding order
+
+To maintain consistency across systems, the field index for each schema properties is based on it's alphabetical order, starting from 1.
+
+The implementation of this sort function must be based on the numerical sorting of Unicode (UTF-16) character code values of the property name.
+
+Example:
+
+```json
+
+{
+  "type": "object",
+  "properties": {
+    "a": { "type": "boolean" },
+    "c": { "type": "boolean" },
+    "b": { "type": "boolean" }
+  }
+}
+
+```
+Will attribute index 0 to field `a`, index 1 to field `b` and 2 for `c`. Implementations of this protocol must follow this sorting rule to maintain consistency, even if properties are listed in differring orders across systems.
+
+Encoding of values to generate the binary output simply follows the order in which the properties are listed in the structure or object.
+
+For example, serializing `{ c: true, a: true, b: true }` with the previous schema will output: `0x03 0x01 0x01 0x01 0x02 0x01`. 
+
+
+## 2.5 Versionning
+
+Compactr binaries do not include version flags and the protocol does not include versionning mechanisms.
+
+---
 
 ## 3. Schemas
 
@@ -76,7 +144,11 @@ While functional, the early versions would still require the knowledge of writin
 
 
 
-
+Type | Variant | Bytes | Limit
+---
+String | - | 2 | 0xFFFF
+String | Binary | 4 | 0xFFFFFFFF
+Array | - | 2 | 
 
 
 ## Key Characteristics
