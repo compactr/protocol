@@ -15,7 +15,7 @@ Keywords:
 
 ## Abstract
 
-This document specifies the compactr format, a schema-based serialization protocol which aims to reuse existing [[OAS]](https://spec.openapis.org/oas/v3.1.2.html)OpenAPI specifications as schemas.
+This document specifies the compactr format, a schema-based serialization protocol that reuses existing [[OAS]](https://spec.openapis.org/oas/v3.1.2.html)OpenAPI specifications as schemas.
 
 ## Status
 
@@ -35,7 +35,7 @@ The specification is Stable as of this publication's release.
 
   - [2.4 Schema properties and Encoding order](#2-4-Schema-properties-and-Encoding-order)
 
-  - [2.5 Versionning](#2-5-Versionning)
+  - [2.5 Versioning](#2-5-Versioning)
 
 - [3. Schemas](#3-Schemas)
 
@@ -55,9 +55,9 @@ The specification is Stable as of this publication's release.
 
 ## 1. Background
 
-Serialization in the context of Web APIs refers to the process of converting data structures into a format that can be easily transmitted over a network, typically in formats such as TEXT (ex: JSON, XML), or BINARY (ex: Files, [Protobuf](https://protobuf.dev/)), so that they can be understood and reconstructed by other systems.
+Serialization in the context of Web APIs refers to the process of converting data structures into a format that can be easily transmitted over a network, typically in text-based formats (e.g., JSON, XML), or binary formats (e.g., files, [Protobuf](https://protobuf.dev/)), so that they can be understood and reconstructed by other systems.
 
-A schema-based serialization approach enforces a predefined structure for data, ensuring consistency and validation, while a schema-less approach allows for more flexible and dynamic data representation, with fewer constraints on how data is organized.
+A schema-based serialization approach enforces a predefined structure for data, ensuring consistency and validation, whereas a schema-less approach allows for more flexible and dynamic data representation, with fewer constraints on how data is organized.
 
 Schema-based serialization protocols generally yield much smaller outputs, which is desirable to limit bandwidth and costs. The caveat to schema-based serialization is the cost of creating and maintaining schemas across multiple systems.
 
@@ -80,24 +80,24 @@ In order to meet these objectives, some key design decisions were made:
 
 ### 2.1 Byte-order
 
-Compactr binary follows Network byte order (NBO) big-endian format.
+Compactr binary follows Network Byte Order (NBO) big-endian format.
 
 ### 2.2 Key limits
 
-Indices for properties are assigned a numeric value which is stored as an unsigned 8bit integer. Thus limiting the number of properties per object to 255.
+Indices are assigned for properties and stored as an unsigned 8-bit integer. Thus limiting the number of properties per object to 255.
 
 ### 2.3 Size limits
 
-Some primitive types (ex: `Boolean`) have static sizes, which are not encoded, while others (ex: `String`) have dynamic sizes.
+Some primitive types (e.g., `Boolean`) have fixed sizes, thus not requiring size bytes to be encoded, while others (e.g.,: `String`) have dynamic sizes.
 
-Dynamically-sized properties have varying size limits, which are described in the [primitives](#4-primitives) section of this document.
+Dynamically-sized properties have size limits represented by unsigned integers of varying sizes, which are described in the [primitives](#4-primitives) section of this document.
 
 
 ### 2.4 Schema properties and Encoding order
 
-To maintain consistency across systems, the field index for each schema properties is based on it's alphabetical order, starting from 1.
+To maintain consistency across systems, the field index for each schema property is based on its alphabetical order, starting from 1.
 
-The implementation of this sort function must be based on the numerical sorting of Unicode (UTF-16) character code values of the property name.
+The sorting function must be based on the numerical order of Unicode (UTF-16) character code values of the property names.
 
 Example:
 
@@ -120,9 +120,9 @@ Encoding of values to generate the binary output simply follows the order in whi
 For example, serializing `{ c: true, a: true, b: true }` with the previous schema will output: `0x03 0x01 0x01 0x01 0x02 0x01`. 
 
 
-## 2.5 Versionning
+## 2.5 Versioning
 
-Compactr binaries do not include version flags and the protocol does not include versionning mechanisms.
+Compactr binaries do not include version flags and the protocol does not include versioning mechanisms.
 
 ---
 
