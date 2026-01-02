@@ -1,15 +1,16 @@
----
-title: Compactr Format Specification v1.0
-author:
-- name: Frederic Charette
-  role: maintainer
-  email: fredericcharette@gmail.com
-date: 2026-01-01
-area: API
-workgroup: Compactr
-keyword:
+# Compactr Format Specification v1.0
+
+Authors:
+- Frederic Charette <fredericcharette@gmail.com>
+  
+Date published: 2026-01-01
+
+Last update: 2026-01-02
+
+Keywords:
 - serialization
 - open-api
+
 ---
 
 ## Abstract
@@ -22,27 +23,38 @@ The specification is Stable as of this publication's release.
 
 ## Table of Contents
 
-[1. Background](#1_Background)
+[1. Background](#1-Background)
 
-[2. Design decisions](#2_Design_decisions)
+[2. Design decisions](#2-Design-decisions)
 
-[3. Schemas](#3_Schemas)
+[3. Schemas](#3-Schemas)
 
-[4. Primitive types](#4_Primitive_types)
+[4. Primitive types](#4-Primitive-types)
 
-[5. Complex schemas](#5_Complex_schemas)
+[5. Complex schemas](#5-Complex-schemas)
 
-[6. Variants](#6_Variants)
+[6. Variants](#6-Variants)
 
-[7. Implementation considerations](#7_Implementation_considerations)
+[7. Implementation considerations](#7-Implementation-considerations)
 
-[8. Security considerations](#8_Security_considerations)
+[8. Security considerations](#8-Security-considerations)
 
-[9. References](#9_References)
+[9. References](#9-References)
 
 ---
 
 ## 1. Background
+
+Serialization in the context of Web APIs refers to the process of converting data structures into a format that can be easily transmitted over a network, typically in formats such as TEXT (ex: JSON, XML), or BINARY (ex: Files, [Protobuf](https://protobuf.dev/), so that they can be understood and reconstructed by other systems.
+
+A schema-based serialization approach enforces a predefined structure for data, ensuring consistency and validation, while a schema-less approach allows for more flexible and dynamic data representation, with fewer constraints on how data is organized.
+
+Schema-based serialization protocols generally yield much smaller outputs, which is desirable to limit bandwidth and costs. The caveat to schema-based serialization is the cost of creating and maintaining schemas across multiple systems.
+
+The initial concept for the compactr protocol was drafted in [2016](https://www.npmjs.com/package/compactr/v/0.0.1) with the goal of creating a schema-based serialization protocol that outputs minimal binary while using first party markdown or code structures as schemas.
+
+While functional, the early versions would still require the knowledge of writing "compactr-style" schemas as Javascript Objects or JSON and limited adoption for languages outside of Javascript. As of compactr.js 3.0, release in 2025, the protocol moved to adopt OpenAPI 3.x as the base format for compactr schemas.
+
 
 ## 2. Design decisions
 
