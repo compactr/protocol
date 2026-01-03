@@ -39,7 +39,19 @@ The specification is Stable as of this publication's release.
 
 - [3. Schemas](#3-Schemas)
 
-- [4. Primitive types](#4-Primitive-types)
+  - [3.1 Schema Source](#3-1-Schema-source)
+ 
+  - [3.2 Required vs Optional Properties](#3-2-Required-vs-Optional-Properties)
+ 
+  - [3.3 Walkthrough properties](#3-3-Walkthrough-properties)
+
+- [4. Encoding](#4-Encoding)
+
+  - [4.1 Variants](#4-1-Variants)
+
+  - [4.2 Primitive types](#4-2-Primitive-types)
+ 
+  - 
 
 - [5. Complex schemas](#5-Complex-schemas)
 
@@ -52,6 +64,8 @@ The specification is Stable as of this publication's release.
 - [9. References](#9-References)
 
 ---
+
+The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”, “SHALL NOT”, “SHOULD”, “SHOULD NOT”, “RECOMMENDED”, “NOT RECOMMENDED”, “MAY”, and “OPTIONAL” in this document are to be interpreted as described in [[BCP 14]](https://tools.ietf.org/html/bcp14) [[RFC2119]](https://spec.openapis.org/oas/v3.1.2.html#bib-rfc2119) [[RFC8174]](https://spec.openapis.org/oas/v3.1.2.html#bib-rfc8174) when, and only when, they appear in all capitals, as shown here.
 
 ## 1. Background
 
@@ -80,24 +94,24 @@ In order to meet these objectives, some key design decisions were made:
 
 ### 2.1 Byte-order
 
-Compactr binary follows Network Byte Order (NBO) big-endian format.
+Compactr binary MUST follow Network Byte Order (NBO) big-endian format.
 
 ### 2.2 Key limits
 
-Indices are assigned for properties and stored as an unsigned 8-bit integer. Thus limiting the number of properties per object to 255.
+Indices SHALL be assigned for properties and stored as an unsigned 8-bit integer. Thus limiting the number of properties per object to 255.
 
 ### 2.3 Size limits
 
-Some primitive types (e.g., `Boolean`) have fixed sizes, thus not requiring size bytes to be encoded, while others (e.g.,: `String`) have dynamic sizes.
+Some primitive types (e.g., `Boolean`) have fixed sizes and therefore MUST NOT encode size bytes, while others (e.g.,: `String`) have dynamic sizes and MUST include between one and four size bytes.
 
-Dynamically-sized properties have size limits represented by unsigned integers of varying sizes, which are described in the [primitives](#4-primitives) section of this document.
+Size bytes are represented by unsigned integers of varying sizes, which are described in the [primitives](#4-primitives) section of this document.
 
 
 ### 2.4 Schema properties and Encoding order
 
 To maintain consistency across systems, the field index for each schema property is based on its alphabetical order, starting from 1.
 
-The sorting function must be based on the numerical order of Unicode (UTF-16) character code values of the property names.
+The sorting function MUST be based on the numerical order of Unicode (UTF-16) character code values of the property names.
 
 Example:
 
@@ -113,16 +127,28 @@ Example:
 }
 
 ```
-Will attribute index 0 to field `a`, index 1 to field `b` and 2 for `c`. Implementations of this protocol must follow this sorting rule to maintain consistency, even if properties are listed in differring orders across systems.
+Will attribute index 0 to field `a`, index 1 to field `b` and 2 for `c`. Implementations of this protocol MUST follow this sorting rule to maintain consistency, even if properties are listed in differring orders across systems.
 
-Encoding of values to generate the binary output simply follows the order in which the properties are listed in the structure or object.
+Encoding of values to generate the binary output SHOULD simply follow the order in which the properties are listed in the structure or object.
 
 For example, serializing `{ c: true, a: true, b: true }` with the previous schema will output: `0x03 0x01 0x01 0x01 0x02 0x01`. 
 
 
-## 2.5 Versioning
+## 2.5 Unsupported features
+
+### 2.5.1 References
+
+`$ref` references are supported, with constraints which MUST be enforced in client implementations:
+
+- Circular references MUST be detected.
+- Recursive schemas MAY be supported but implementations SHOULD impose depth limits.
+- External $ref targets (remote URLs) MAY be supported but MUST be resolved prior to encoding.
+
+### 2.5.2 Versioning
 
 Compactr binaries do not include version flags and the protocol does not include versioning mechanisms.
+
+Client implementations MAY elect to include integrity or versioning checks provided that the final encoded binary remains compatible with the Compactr protocol.
 
 ---
 
@@ -130,7 +156,7 @@ Compactr binaries do not include version flags and the protocol does not include
 
 ### 3.1 Schema Source
 
-Compactr schemas are derived from OpenAPI 3.0+ Schema Objects, as defined in [[OAS]].
+Compactr schemas are derived from OpenAPI 3.0+ Schema Objects, as defined in [[OAS]](https://spec.openapis.org/oas/v3.1.2.html)OpenAPI specifications.
 
 Only the following schema keywords are normative for Compactr encoding:
 
@@ -147,28 +173,9 @@ Only the following schema keywords are normative for Compactr encoding:
 
 All other OpenAPI keywords (e.g., description, example, deprecated) are ignored for encoding purposes.
 
-### 3.2 Supported OpenAPI Types
+### 3.2 Required vs Optional Properties
 
-| Type | Format | Bytes | Description |
-| --- | --- | --- | --- |
-| boolean | - | 1 | Boolean value |
-| integer | int32 | 4 | 32-bit integer |
-| integer | int64 | 8 | 64-bit integer |
-| number | float | 4 | 32-bit floating point |
-| number | double | 8 | 64-bit floating point |
-| string | - | variable | UTF-8 variable size encoding |
-| string | uuid | 16 | UUID (compressed) |
-| string | ipv4 | 4 | IPv4 address |
-| string | ipv6 | 16 | IPv6 address |
-| string | date | 4 | Date (YYYY-MM-DD) |
-| string | date-time | 8 | ISO 8601 date-time |
-| string | binary | variable | Base64 binary data |
-| array | - | variable | Array of items |
-| object | - | variable | Nested object |
-
-### 3.3 Required vs Optional Properties
-
-Properties listed in required MUST be present during encoding.
+Properties listed in required MUST be present during encoding. Missing required properties MUST throw an encoding error. 
 
 Optional properties MAY be omitted.
 
@@ -176,57 +183,73 @@ Missing optional properties are not encoded and do not occupy space.
 
 Decoders MUST treat omitted optional properties as undefined (or language equivalent).
 
-## 4. Primitive types
+### 3.3 Walkthrough properties
 
-### 4.1 Boolean
+Compactr walks through composition keywords `$ref`, `schema` `oneOf`, `allOf`, `anyOf` and only creates internal models for primitives.
 
-Size: 1 byte
+---
 
-Encoding:
+## 4. Encoding
 
-0x00 → false
+Properties are encoded with the matching schema index first (`i`), then an optional variant byte (`v`), optional size byte(s) (`s`), then the encoded value (`d`).
 
-0x01 → true
+`[i][v?][s?...][d...]`
 
-No size prefix is used.
+### 4.1 Variants
 
-### 4.2 Integers
+Encoded fields which have the `nullable` schema property and a `null` value have an extra byte that indicates the variant.
 
-Size: 4 bytes
+- `0x00` For null values
+- `0x01` For non-null values
 
-Encoding: Signed two’s complement, big-endian
+If the `nullable` property is not present in the schema, the variant byte is not encoded and `null` values are not encoded.
 
-Valid range: −2³¹ to 2³¹−1
-
-### 4.3 Numbers
-
-Size: 4 bytes
-
-Encoding: IEEE 754 single-precision, big-endian
-
-Mapped from OpenAPI number when format: float.
-
-4.5 String
-
-Two encoding modes exist.
-
-Standalone / array strings
-[u16 length][UTF-8 bytes]
+Fields with multiple definitions, as described in the schema with the `oneOf` or `anyOf` keywords use the variant byte to indicate which definition to use, starting with `0x01` for the first definition, and incrementing by `0x01` for each subsequent one.
 
 
-Maximum length: 65,535 bytes.
+### 4.2 Primitive types
 
-Object property strings
-[size][UTF-8 bytes]
+Types are based on JSON Schema Validation Specification Draft 2020-12: `array`, `boolean`, `integer`, `number`, `object` or `string`.
+
+#### 4.2.1 Array
+
+#### 4.2.2 Boolean
+
+Fixed size of 1 byte, either 0x00 for false or 0x01 for true.
+
+#### 4.2.3 Integers
+
+Variable size based on the `format` attribute defined in the schema. Size byte SHOULD NOT be encoded. Decoding should take in account the `format` attribute to determine the size.
+
+- `(null, undefined or language equivalent)`: unsigned 32-bit integer
+- `int32`: unsigned 32-bit integer
+- `int64`: unsigned 64-bit integer
+
+#### 4.2.4 Numbers
+
+Variable size based on the `format` attribute defined in the schema. Size byte SHOULD NOT be encoded. Decoding should take in account the `format` attribute to determine the size.
+
+- `(null, undefined or language equivalent)`: 32-bit floating point
+- `float`: 32-bit floating point
+- `double`: 64-bit floating point
+
+#### 4.2.5 Objects
 
 
-The size field is supplied by the enclosing object encoding.
 
-Strings MUST be valid UTF-8.
+#### 4.2.6 Strings
 
-4.6 Binary
-[u32 length][raw bytes]
+Strings are encoded as UTF-8 Multi-byte Unicode characters. Most languages provide a UTF-8 encoding utility, which SHOULD be used to determine the size and generate the bytes to be appended.
 
+
+### 4.3 Special formats
+
+Compactr supports encoding of special formats to improve efficiency. Additional special encoding formats MAY be added.
+
+#### 4.3.1 Binary
+
+
+### 4.
 
 Mapped from OpenAPI:
 
@@ -382,3 +405,27 @@ Compactr does not provide encryption, authentication, or integrity guarantees.
 ## 9. References
 
 [OAS] OpenAPI Specification, The OpenAPI initiative, <https://spec.openapis.org/oas/v3.1.2.html>
+
+
+
+
+
+
+### 3.2 Supported OpenAPI Types
+
+| Type | Format | Bytes | Description |
+| --- | --- | --- | --- |
+| boolean | - | 1 | Boolean value |
+| integer | int32 | 4 | 32-bit integer |
+| integer | int64 | 8 | 64-bit integer |
+| number | float | 4 | 32-bit floating point |
+| number | double | 8 | 64-bit floating point |
+| string | - | variable | UTF-8 variable size encoding |
+| string | uuid | 16 | UUID (compressed) |
+| string | ipv4 | 4 | IPv4 address |
+| string | ipv6 | 16 | IPv6 address |
+| string | date | 4 | Date (YYYY-MM-DD) |
+| string | date-time | 8 | ISO 8601 date-time |
+| string | binary | variable | Base64 binary data |
+| array | - | variable | Array of items |
+| object | - | variable | Nested object |
