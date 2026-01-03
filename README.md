@@ -102,7 +102,7 @@ Indices SHALL be assigned for properties and stored as an unsigned 8-bit integer
 
 ### 2.3 Size limits
 
-Some primitive types (e.g., `Boolean`) have fixed sizes and therefore MUST NOT encode size bytes, while others (e.g.,: `String`) have dynamic sizes and MUST include between one and four size bytes.
+Some primitive types (e.g., `Boolean`) have fixed sizes and therefore MUST NOT encode size bytes, while others (e.g.,: `String`) have variable sizes and MUST include between one and four size bytes.
 
 Size bytes are represented by unsigned integers of varying sizes, which are described in the [primitives](#4-primitives) section of this document.
 
@@ -213,7 +213,27 @@ Types are based on JSON Schema Validation Specification Draft 2020-12: `array`, 
 
 #### 4.2.1 Array
 
-#### 4.2.2 Boolean
+Arrays MUST include an unsigned 32-bit integer to represent the whole size of the array. Individual elements are treated sequentially as their primitives defined in the schema.
+
+Example:
+
+```
+// Schema
+{
+  type: 'object',
+  properties: {
+    foo: {
+      type: 'array',
+      items: { type: 'string' }
+    }
+  }
+}
+
+// Data
+{ foo: [ 'hello', 'bye', 'bye' ] }
+```#
+Results in this buffer: `0x01 0x00 0x00 0x0e 0x05 0x68 0x65 0x6c 0x6c 0x6f 0x03 0x62 0x79 0x65 0x03 0x62 0x79 0x65`.
+## 4.2.2 Boolean
 
 Fixed size of 1 byte, either 0x00 for false or 0x01 for true.
 
@@ -291,94 +311,6 @@ Mapped from:
 
 type: string
 format: date-time
-
-## 5. Complex schemas
-
-5.1 Object Encoding
-
-Objects are encoded as:
-
-[num_properties][property...]
-
-
-Where each property is:
-
-[index][size][value]
-
-
-num_properties: u8
-
-index: u8 (alphabetical index)
-
-size: variable (see below)
-
-5.3 Arrays
-
-Arrays are encoded as a sequence of elements, without a global count:
-
-[element_size][element_value]...
-
-
-The end of the array is determined by the enclosing object’s size field.
-
-This design allows streaming decoding.
-
-5.4 Nested Objects
-
-Nested objects follow the same encoding rules recursively.
-
-There is no depth limit imposed by the protocol; implementations SHOULD impose practical limits.
-
-## 6. Variants
-
-6.1 Union Types (oneOf, anyOf)
-
-Variants are encoded as:
-
-[variant_index][value]
-
-
-variant_index: u8, based on schema order
-
-value: encoded according to the selected schema
-
-Example:
-
-oneOf:
-  - type: string
-  - type: int32
-
-
-Encoding "abc":
-
-0x00 [string encoding]
-
-6.2 Nullable Values
-
-If nullable: true, a null value is encoded as:
-
-0xff
-
-
-No further bytes follow.
-
-This sentinel value is reserved and MUST NOT collide with valid indices.
-
-### 6.3 Custom variants
-
-## 7. Implementation considerations
-
-### 7.1 Determinism
-
-Encoders MUST:
-
-Alphabetically sort schema properties
-
-Preserve value insertion order
-
-Use canonical size encodings
-
-Failure to do so breaks binary compatibility.
 
 ## 8. Security considerations
 
