@@ -27,51 +27,51 @@ The specification is Stable as of this publication's release.
 
 - [2. Design decisions](#2-Design-decisions)
 
-  - [2.1 Byte-order](#2-1-Byte-order)
+  - [2.1 Byte-order](#21-Byte-order)
 
-  - [2.2 Key limits](#2-2-Key-limits)
+  - [2.2 Key limits](#22-Key-limits)
 
-  - [2.3 Size limits](#2-3-Size-limits)
+  - [2.3 Size limits](#23-Size-limits)
 
-  - [2.4 Schema properties and Encoding order](#2-4-Schema-properties-and-Encoding-order)
+  - [2.4 Schema properties and Encoding order](#24-Schema-properties-and-Encoding-order)
 
-  - [2.5 Versioning](#2-5-Versioning)
+  - [2.5 Versioning](#25-Versioning)
 
 - [3. Schemas](#3-Schemas)
 
-  - [3.1 Schema Source](#3-1-Schema-source)
+  - [3.1 Schema Source](#31-Schema-source)
  
-  - [3.2 Required vs Optional Properties](#3-2-Required-vs-Optional-Properties)
+  - [3.2 Required vs Optional Properties](#32-Required-vs-Optional-Properties)
  
-  - [3.3 Walkthrough properties](#3-3-Walkthrough-properties)
+  - [3.3 Walkthrough properties](#33-Walkthrough-properties)
 
 - [4. Encoding](#4-Encoding)
 
-  - [4.1 Variants](#4-1-Variants)
+  - [4.1 Variants](#41-Variants)
 
-  - [4.2 Primitive types](#4-2-Primitive-types)
+  - [4.2 Primitive types](#42-Primitive-types)
  
-    - [4.2.1 Arrays](#4-2-1-arrays)
+    - [4.2.1 Arrays](#421-arrays)
     
-    - [4.2.2 Boolean](#4-2-2-boolean)
+    - [4.2.2 Boolean](#422-boolean)
     
-    - [4.2.3 Integers](#4-2-3-integers)
+    - [4.2.3 Integers](#423-integers)
     
-    - [4.2.4 Numbers](#4-2-4-numbers)
+    - [4.2.4 Numbers](#424-numbers)
     
-    - [4.2.5 Objects](#4-2-5-objects)
+    - [4.2.5 Objects](#425-objects)
     
-    - [4.2.6 Strings](#4-2-6-strings)
+    - [4.2.6 Strings](#426-strings)
    
-  - [4.3 Special formats](#4-3-special-formats)
+  - [4.3 Special formats](#43-special-formats)
 
-    - [4.3.1 Binary](#4-3-1-binary)
+    - [4.3.1 Binary](#431-binary)
    
-    - [4.3.2 Date and DateTime](#4-3-2-date-and-datetime)
+    - [4.3.2 Date and DateTime](#432-date-and-datetime)
    
-    - [4.3.3 IPV4 and IPV6](#4-3-3-ipv4-and-ipv6)
+    - [4.3.3 IPV4 and IPV6](#433-ipv4-and-ipv6)
    
-    - [4.3.4 UUID](#4-3-4-uuid)
+    - [4.3.4 UUID](#434-uuid)
 
 - [5. Security considerations](#5-Security-considerations)
 
