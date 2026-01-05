@@ -225,7 +225,7 @@ Fields with multiple definitions, as described in the schema with the `oneOf` or
 
 Types are based on JSON Schema Validation Specification Draft 2020-12: `array`, `boolean`, `integer`, `number`, `object` or `string`.
 
-#### 4.2.1 Array
+#### 4.2.1 Arrays
 
 Arrays MUST include an unsigned 32-bit integer to represent the whole size of the array. Individual elements are treated sequentially as their primitives defined in the schema.
 
@@ -249,7 +249,7 @@ Example:
 
 Results in this buffer: `0x01 0x00 0x00 0x0e 0x05 0x68 0x65 0x6c 0x6c 0x6f 0x03 0x62 0x79 0x65 0x03 0x62 0x79 0x65`.
 
-## 4.2.2 Boolean
+#### 4.2.2 Boolean
 
 Fixed size of 1 byte, either 0x00 for false or 0x01 for true.
 
