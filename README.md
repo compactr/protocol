@@ -15,7 +15,7 @@ Keywords:
 
 ## Abstract
 
-This document specifies the compactr format, a schema-based serialization protocol that reuses existing [[OAS]](https://spec.openapis.org/oas/v3.1.2.html)OpenAPI specifications as schemas.
+This document specifies the compactr format, a schema-based serialization protocol that reuses existing [[OAS]](#6-References)OpenAPI specifications as schemas.
 
 ## Status
 
@@ -51,21 +51,35 @@ The specification is Stable as of this publication's release.
 
   - [4.2 Primitive types](#4-2-Primitive-types)
  
-  - 
+    - [4.2.1 Arrays](#4-2-1-arrays)
+    
+    - [4.2.2 Boolean](#4-2-2-boolean)
+    
+    - [4.2.3 Integers](#4-2-3-integers)
+    
+    - [4.2.4 Numbers](#4-2-4-numbers)
+    
+    - [4.2.5 Objects](#4-2-5-objects)
+    
+    - [4.2.6 Strings](#4-2-6-strings)
+   
+  - [4.3 Special formats](#4-3-special-formats)
 
-- [5. Complex schemas](#5-Complex-schemas)
+    - [4.3.1 Binary](#4-3-1-binary)
+   
+    - [4.3.2 Date and DateTime](#4-3-2-date-and-datetime)
+   
+    - [4.3.3 IPV4 and IPV6](#4-3-3-ipv4-and-ipv6)
+   
+    - [4.3.4 UUID](#4-3-4-uuid)
 
-- [6. Variants](#6-Variants)
+- [5. Security considerations](#5-Security-considerations)
 
-- [7. Implementation considerations](#7-Implementation-considerations)
-
-- [8. Security considerations](#8-Security-considerations)
-
-- [9. References](#9-References)
+- [6. References](#6-References)
 
 ---
 
-The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”, “SHALL NOT”, “SHOULD”, “SHOULD NOT”, “RECOMMENDED”, “NOT RECOMMENDED”, “MAY”, and “OPTIONAL” in this document are to be interpreted as described in [[BCP 14]](https://tools.ietf.org/html/bcp14) [[RFC2119]](https://spec.openapis.org/oas/v3.1.2.html#bib-rfc2119) [[RFC8174]](https://spec.openapis.org/oas/v3.1.2.html#bib-rfc8174) when, and only when, they appear in all capitals, as shown here.
+The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”, “SHALL NOT”, “SHOULD”, “SHOULD NOT”, “RECOMMENDED”, “NOT RECOMMENDED”, “MAY”, and “OPTIONAL” in this document are to be interpreted as described in [[RFC2119]](#6-References) [[RFC8174]](#6-References) when, and only when, they appear in all capitals, as shown here.
 
 ## 1. Background
 
@@ -85,7 +99,7 @@ While functional, the early versions would still require the knowledge of writin
 
 The primary objectives of the Compactr protocols are:
 
-- First-party schema definitions, using [[OAS]](https://spec.openapis.org/oas/v3.1.2.html)OpenAPI specifications as base schemas.
+- First-party schema definitions, using [[OAS]](#6-References)OpenAPI specifications as base schemas.
 - Optimized binary output
 - Compatibility across runtimes
 - Type safety
@@ -104,7 +118,7 @@ Indices SHALL be assigned for properties and stored as an unsigned 8-bit integer
 
 Some primitive types (e.g., `Boolean`) have fixed sizes and therefore MUST NOT encode size bytes, while others (e.g.,: `String`) have variable sizes and MUST include between one and four size bytes.
 
-Size bytes are represented by unsigned integers of varying sizes, which are described in the [primitives](#4-primitives) section of this document.
+Size bytes are represented by unsigned integers of varying sizes, which are described in the [primitives](#4-2-primitive-types) section of this document.
 
 
 ### 2.4 Schema properties and Encoding order
@@ -251,18 +265,19 @@ Variable size based on the `format` attribute defined in the schema. Size byte S
 
 Variable size based on the `format` attribute defined in the schema. Size byte SHOULD NOT be encoded. Decoding should take in account the `format` attribute to determine the size.
 
+All floating-point arithmetic MUST adhere to [[IEEE 754-2019]](#6-References) 
+
 - `(null, undefined or language equivalent)`: 32-bit floating point
 - `float`: 32-bit floating point
 - `double`: 64-bit floating point
 
 #### 4.2.5 Objects
 
-
+Objects are encoded recursively using the same scheme: `[i][v?][s?...][d...]`.
 
 #### 4.2.6 Strings
 
 Strings are encoded as UTF-8 Multi-byte Unicode characters. Most languages provide a UTF-8 encoding utility, which SHOULD be used to determine the size and generate the bytes to be appended.
-
 
 ### 4.3 Special formats
 
@@ -270,96 +285,62 @@ Compactr supports encoding of special formats to improve efficiency. Additional 
 
 #### 4.3.1 Binary
 
+Variable length `string` format with 32-bit size bytes.
 
-### 4.
+Buffers and UInt8Arrays MAY be encoded as-is, while `strings` MUST be Base64 encoded.
 
-Mapped from OpenAPI:
+#### 4.3.2 Date and DateTime
 
-type: string
-format: binary
+Fixed length `string` formats with no size bytes.
 
+`date` is represented as `[uint32][uint8][uint8]` to encode YYYY-MM-DD values.
 
-Maximum length: 4,294,967,295 bytes.
+`date-time` is represented as `[uint32][uint8][uint8][uint8][uint8][uint8][uint32]` to encode YYYY-MM-DDTHH:mm:ss.sssZ date strings with UTC time.
 
-4.7 UUID
+Values MUST be reconstructed as such by the decoder to fit [[ISO 8601]](#6-References) extended date.
 
-Size: 16 bytes
+Implementations SHOULD validate that the input string is a valid date string and SHOULD set time bytes to 0 if not explicitly set.
 
-Encoding: Raw UUID bytes, network order
+#### 4.3.3 IPV4 and IPV6
 
-Mapped from:
+Fixed length `string` formats with no size bytes.
 
-type: string
-format: uuid
+`ipv4` is represented as [uint8][uint8][uint8][uint8] and must be decoded to match [[RFC791]](#6-References) IPV4 format.
 
-4.8 Date
+`ipv6` is represented as [uint32][uint32][uint32][uint32] and must be decoded to match [[RFC8200]](#6-References) IPV6 format.
 
-Size: 4 bytes
+#### 4.3.4 UUID
 
-Encoding: Signed int32, days since Unix epoch (UTC)
+Fixed sized 16 bytes using raw UUID bytes (network-order) and must be decoded as standard [[RFC9562]](#6-References) UUID.
 
-Mapped from:
+---
 
-type: string
-format: date
-
-4.9 DateTime
-
-Size: 9 bytes
-
-Encoding: Component-based UTC timestamp
-
-Mapped from:
-
-type: string
-format: date-time
-
-## 8. Security considerations
+## 5. Security considerations
 
 Implementations MUST guard against:
 
-Oversized length prefixes
-
-Deeply nested schemas
-
-Malformed UTF-8
-
-Integer overflow during size calculations
-
-Decoders SHOULD impose:
-
-Maximum object size
-
-Maximum recursion depth
-
-Maximum array element count
+- Circular schemas
+- Malformed UTF-8
+- Integer overflow
+- Maximum object keys
+- Maximum object recursion depth
+- Array total byte size
+- Ensure schema formats match the appropriate schema type
 
 Compactr does not provide encryption, authentication, or integrity guarantees.
 
-## 9. References
+---
 
-[OAS] OpenAPI Specification, The OpenAPI initiative, <https://spec.openapis.org/oas/v3.1.2.html>
+## 6. References
 
+- [OAS] OpenAPI Specification v3.1.2. The Linux foundation (2025). <https://spec.openapis.org/oas/v3.1.2.html>
+- [RFC791] Internet protocol. DARPA Internet Program Protocol Specification. (1981). <https://www.rfc-editor.org/rfc/rfc791>
+- [RFC2119] Key words for use in RFCs to Indicate Requirement Levels. S. Bradner. IETF. (1997). <https://www.rfc-editor.org/rfc/rfc2119>
+- [RFC8174] Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words. B. Leiba. IETF. (2017). <https://www.rfc-editor.org/rfc/rfc8174>
+- [RFC8200] Internet Protocol, Version 6 (IPv6) Specification. S. Deering. IETF. (2017). <https://datatracker.ietf.org/doc/html/rfc8200>
+- [RFC9562] Universally Unique IDentifiers (UUIDs). K. Davis. IETF. (2024) <https://www.rfc-editor.org/rfc/rfc9562.html>
+- [IEEE 754-2019] IEEE 754-2019: IEEE Standard for Floating-Point Arithmetic. Institute of Electrical and Electronic Engineers. (2019).
 
+---
 
-
-
-
-### 3.2 Supported OpenAPI Types
-
-| Type | Format | Bytes | Description |
-| --- | --- | --- | --- |
-| boolean | - | 1 | Boolean value |
-| integer | int32 | 4 | 32-bit integer |
-| integer | int64 | 8 | 64-bit integer |
-| number | float | 4 | 32-bit floating point |
-| number | double | 8 | 64-bit floating point |
-| string | - | variable | UTF-8 variable size encoding |
-| string | uuid | 16 | UUID (compressed) |
-| string | ipv4 | 4 | IPv4 address |
-| string | ipv6 | 16 | IPv6 address |
-| string | date | 4 | Date (YYYY-MM-DD) |
-| string | date-time | 8 | ISO 8601 date-time |
-| string | binary | variable | Base64 binary data |
-| array | - | variable | Array of items |
-| object | - | variable | Nested object |
+Licensed under Apache 2.0, 2026, Compactr, Frederic Charette
