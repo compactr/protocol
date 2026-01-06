@@ -267,7 +267,7 @@ Variable size based on the `format` attribute defined in the schema. Size byte S
 
 All floating-point arithmetic MUST adhere to [[IEEE 754-2019]](#6-References) 
 
-- `(null, undefined or language equivalent)`: 32-bit floating point
+- `(null, undefined or language equivalent)`: 64-bit floating point
 - `float`: 32-bit floating point
 - `double`: 64-bit floating point
 
