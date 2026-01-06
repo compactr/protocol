@@ -5,7 +5,7 @@ Authors:
   
 Date published: 2026-01-01
 
-Last update: 2026-01-02
+Last update: 2026-01-06
 
 Keywords:
 - serialization
@@ -229,7 +229,7 @@ Example:
 
 ### 3.3 Composition Keywords
 
-Compactr walks through composition and walkthrough keywords `$ref`, `schema`, `oneOf`, `allOf`, `anyOf` and only creates internal models for primitives.
+Compactr walks through composition keywords `$ref`, `schema`, `oneOf`, `allOf`, `anyOf` and `schema` to only create internal models for primitives.
 
 **`allOf`**: Merges all schemas in the array. All properties from all schemas MUST be encoded. The merged schema is treated as a single object schema.
 
